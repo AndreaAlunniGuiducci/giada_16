@@ -1,0 +1,17 @@
+.gameArea {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.danceHeader {
+  height: 68px;
+}
+.gameArea .notesArea {
+  flex: 1;
+}
+.gameArea .notesArea .clickArea {
+  top: 80%;
+}
+.controls {
+  height: 96px;
+}

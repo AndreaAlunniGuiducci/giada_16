@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import "./dance.css";
 
 type Direction = "up" | "down" | "left" | "right";
 
@@ -16,13 +17,13 @@ interface Note {
 }
 
 const DIRECTIONS: Direction[] = ["up", "down", "left", "right"];
-const GAME_HEIGHT = 600;
-const HIT_ZONE = 520;
-const HIT_TOLERANCE = 60; // Aumentato per rendere più facile colpire le note lente
+const GAME_HEIGHT = window.innerHeight;
+const HIT_ZONE = (GAME_HEIGHT / 100) * 88; // 80% dell'altezza del gioco
+const HIT_TOLERANCE = 10; // Aumentato per rendere più facile colpire le note lente
 const BPM = 120; // Battiti per minuto
 const BEAT_INTERVAL = (60 / BPM) * 1000; // Millisecondi tra ogni beat
 const NOTE_SPEED = 1.5; // Velocità fissa più lenta per evitare sparizioni
-
+console.log("HIT_ZONE", GAME_HEIGHT, HIT_ZONE);
 // Pattern musicali predefiniti (ogni numero rappresenta un beat, 0 = pausa)
 const SONG_PATTERNS = [
   // Pattern 1 - Semplice
@@ -102,12 +103,14 @@ export default function DanceHero() {
   const checkHit = useCallback(
     (direction: Direction) => {
       setNotes((prev) => {
-        const notesInHitZone = prev.filter(
-          (note) =>
+        const notesInHitZone = prev.filter((note) => {
+          console.log("NOTE POSITION:", note.position);
+          return (
             note.direction === direction &&
             !note.hit &&
             Math.abs(note.position - HIT_ZONE) < HIT_TOLERANCE
-        );
+          );
+        });
 
         if (notesInHitZone.length > 0) {
           const hitNote = notesInHitZone[0];
@@ -252,10 +255,10 @@ export default function DanceHero() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-purple-900 text-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-purple-900 text-white gameArea">
       {/* Header */}
       <div
-        className="flex justify-between items-center p-4 bg-black/20"
+        className="flex justify-between items-center p-4 bg-black/20 danceHeader"
         style={{ zIndex: 10 }}
       >
         <div className="text-base md:text-lg font-bold">
@@ -274,10 +277,7 @@ export default function DanceHero() {
       </div>
 
       {/* Game Area */}
-      <div
-        className="relative bg-black/10"
-        style={{ height: `${GAME_HEIGHT}px` }}
-      >
+      <div className="relative bg-black/10 notesArea">
         {/* Track lines */}
         <div className="absolute inset-0 flex">
           {DIRECTIONS.map((direction, index) => (
@@ -286,10 +286,7 @@ export default function DanceHero() {
               className="flex-1 border-r border-white/20 relative"
             >
               {/* Hit zone indicator */}
-              <div
-                className="absolute w-full h-12 border-2 border-white/50 bg-white/10 rounded"
-                style={{ top: HIT_ZONE - 24 }}
-              />
+              <div className="absolute w-full h-12 border-2 border-white/50 bg-white/10 rounded clickArea" />
             </div>
           ))}
         </div>
@@ -313,7 +310,7 @@ export default function DanceHero() {
       </div>
 
       {/* Controls */}
-      <div className="p-4 bg-black/30">
+      <div className="p-4 bg-black/30 controls">
         <div className="grid grid-cols-4 gap-3 md:gap-4 max-w-md mx-auto">
           {DIRECTIONS.map((direction) => (
             <button
