@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   ChevronUp,
   ChevronDown,
@@ -17,20 +17,18 @@ interface Note {
 }
 
 const DIRECTIONS: Direction[] = ["up", "down", "left", "right"];
-const GAME_HEIGHT = window.innerHeight;
-const HIT_ZONE = (GAME_HEIGHT / 100) * 88; // 80% dell'altezza del gioco
-const HIT_TOLERANCE = 50; // Aumentato per rendere più facile colpire le note lente
-const BPM = 120; // Battiti per minuto
-const BEAT_INTERVAL = (60 / BPM) * 1000; // Millisecondi tra ogni beat
-const NOTE_SPEED = 1.5; // Velocità fissa più lenta per evitare sparizioni
-console.log("HIT_ZONE", GAME_HEIGHT, HIT_ZONE);
-// Pattern musicali predefiniti (ogni numero rappresenta un beat, 0 = pausa)
+const GAME_HEIGHT =
+  typeof window !== "undefined" ? window.innerHeight - 96  : 600;
+const HIT_ZONE = (GAME_HEIGHT / 100) * 80;
+const HIT_TOLERANCE = 50;
+const BPM = 120;
+const BEAT_INTERVAL = (60 / BPM) * 1000;
+const NOTE_SPEED = 1.5;
+
+// Pattern musicali predefiniti
 const SONG_PATTERNS = [
-  // Pattern 1 - Semplice
   [1, 0, 1, 0, 2, 0, 1, 0, 3, 0, 2, 0, 4, 0, 1, 0],
-  // Pattern 2 - Medio
   [1, 2, 0, 3, 1, 0, 4, 2, 0, 1, 3, 0, 2, 4, 0, 1],
-  // Pattern 3 - Complesso
   [1, 2, 3, 0, 4, 1, 0, 2, 3, 4, 0, 1, 2, 0, 3, 4],
 ];
 
@@ -51,7 +49,20 @@ export default function DanceHero() {
   const [pressedKeys, setPressedKeys] = useState<Set<Direction>>(new Set());
   const [currentPatternIndex, setCurrentPatternIndex] = useState(0);
   const [currentBeatIndex, setCurrentBeatIndex] = useState(0);
-  const [lastBeatTime, setLastBeatTime] = useState(0);
+
+  // UseRef per evitare stale closures nei callback
+  const notesRef = useRef<Note[]>([]);
+  const comboRef = useRef(0);
+  const isProcessingHit = useRef(false);
+
+  // Aggiorna i ref quando gli stati cambiano
+  useEffect(() => {
+    notesRef.current = notes;
+  }, [notes]);
+
+  useEffect(() => {
+    comboRef.current = combo;
+  }, [combo]);
 
   const getDirectionIcon = (direction: Direction) => {
     switch (direction) {
@@ -85,86 +96,106 @@ export default function DanceHero() {
     const beatValue = currentPattern[currentBeatIndex];
 
     if (beatValue > 0) {
-      // beatValue 1-4 corrispondono agli indici 0-3 delle direzioni
       const direction = DIRECTIONS[beatValue - 1];
       generateNote(direction);
     }
 
-    // Avanza al prossimo beat
     const nextBeatIndex = (currentBeatIndex + 1) % currentPattern.length;
     setCurrentBeatIndex(nextBeatIndex);
 
-    // Se abbiamo finito il pattern, passa al successivo
     if (nextBeatIndex === 0) {
       setCurrentPatternIndex((prev) => (prev + 1) % SONG_PATTERNS.length);
     }
   }, [currentPatternIndex, currentBeatIndex, generateNote]);
 
-  const checkHit = useCallback(
-    (direction: Direction) => {
-      setNotes((prev) => {
-        const notesInHitZone = prev.filter((note) => {
-          console.log("NOTE POSITION:", note.position);
-          return (
-            note.direction === direction &&
-            !note.hit &&
-            Math.abs(note.position - HIT_ZONE) < HIT_TOLERANCE
-          );
+  const checkHit = useCallback((direction: Direction) => {
+    // Previeni elaborazioni multiple simultanee
+    if (isProcessingHit.current) {
+      console.log("Hit processing blocked - already processing");
+      return;
+    }
+
+    isProcessingHit.current = true;
+
+    // Usa una funzione callback per essere sicuri di avere lo stato più aggiornato
+    setNotes((currentNotes) => {
+      const notesInHitZone = currentNotes.filter((note) => {
+        return (
+          note.direction === direction &&
+          !note.hit &&
+          Math.abs(note.position - HIT_ZONE) < HIT_TOLERANCE
+        );
+      });
+
+      if (notesInHitZone.length > 0) {
+        // Prendi la nota più vicina alla hit zone
+        const hitNote = notesInHitZone.reduce((closest, current) => {
+          const closestDistance = Math.abs(closest.position - HIT_ZONE);
+          const currentDistance = Math.abs(current.position - HIT_ZONE);
+          return currentDistance < closestDistance ? current : closest;
         });
 
-        if (notesInHitZone.length > 0) {
-          const hitNote = notesInHitZone[0];
-          const accuracy = Math.abs(hitNote.position - HIT_ZONE);
-          let points = 100;
+        const accuracy = Math.abs(hitNote.position - HIT_ZONE);
+        let points = 100;
 
-          // Debug per vedere quando viene colpita una nota
-          console.log(
-            `Hit! Note position: ${hitNote.position}, Hit zone: ${HIT_ZONE}, Accuracy: ${accuracy}`
-          );
+        console.log(
+          `Hit! Note ID: ${hitNote.id}, Position: ${hitNote.position}, Hit zone: ${HIT_ZONE}, Accuracy: ${accuracy}`
+        );
 
-          if (accuracy < 20) points = 300; // Perfect - zona più ampia
-          else if (accuracy < 35) points = 200; // Great - zona più ampia
-          else if (accuracy < 50) points = 150; // Good - zona più ampia
+        if (accuracy < 20) points = 300;
+        else if (accuracy < 35) points = 200;
+        else if (accuracy < 50) points = 150;
 
-          setScore((s) => s + points * (combo + 1));
-          setCombo((c) => c + 1);
-          setMaxCombo((mc) => Math.max(mc, combo + 1));
+        // Usa callback per gli aggiornamenti di stato per evitare race conditions
+        setScore((prevScore) => prevScore + points * (comboRef.current + 1));
+        setCombo((prevCombo) => prevCombo + 1);
+        setMaxCombo((prevMax) => Math.max(prevMax, comboRef.current + 1));
 
-          return prev.map((note) =>
-            note.id === hitNote.id ? { ...note, hit: true } : note
-          );
-        } else {
-          // Debug per vedere quando si manca
-          const nearbyNotes = prev
-            .filter((note) => note.direction === direction && !note.hit)
-            .map((note) => ({
-              id: note.id,
-              position: note.position,
-              distance: Math.abs(note.position - HIT_ZONE),
-            }));
+        // Reset del flag di processing dopo un breve delay
+        setTimeout(() => {
+          isProcessingHit.current = false;
+        }, 50);
 
-          console.log(
-            `Miss! Direction: ${direction}, Nearby notes:`,
-            nearbyNotes
-          );
+        return currentNotes.map((note) =>
+          note.id === hitNote.id ? { ...note, hit: true } : note
+        );
+      } else {
+        const nearbyNotes = currentNotes
+          .filter((note) => note.direction === direction && !note.hit)
+          .map((note) => ({
+            id: note.id,
+            position: note.position,
+            distance: Math.abs(note.position - HIT_ZONE),
+          }));
 
-          // Miss - reset combo
-          setCombo(0);
-          return prev;
-        }
-      });
-    },
-    [combo]
-  );
+        console.log(
+          `Miss! Direction: ${direction}, Nearby notes:`,
+          nearbyNotes
+        );
+
+        setCombo(0);
+
+        // Reset del flag di processing
+        setTimeout(() => {
+          isProcessingHit.current = false;
+        }, 50);
+
+        return currentNotes;
+      }
+    });
+  }, []);
 
   const handleKeyPress = useCallback(
     (direction: Direction) => {
       if (!gameStarted) return;
 
+      console.log(
+        `Key pressed: ${direction}, Processing: ${isProcessingHit.current}`
+      );
+
       setPressedKeys((prev) => new Set([...Array.from(prev), direction]));
       checkHit(direction);
 
-      // Remove the pressed state after a short delay
       setTimeout(() => {
         setPressedKeys((prev) => {
           const newSet = new Set(prev);
@@ -176,34 +207,26 @@ export default function DanceHero() {
     [gameStarted, checkHit]
   );
 
-  // Game loop - movimento delle note
+  // Game loop con setInterval invece di requestAnimationFrame per compatibilità
   useEffect(() => {
     if (!gameStarted) return;
 
     const gameLoop = setInterval(() => {
-      // Move notes down
       setNotes((prev) => {
         const updatedNotes = prev
           .map((note) => ({ ...note, position: note.position + NOTE_SPEED }))
-          .filter((note) => {
-            // Rimuovi le note solo quando sono MOLTO oltre la fine dell'area di gioco
-            // Con NOTE_SPEED = 1.5, ci vogliono molti secondi per raggiungere 1000px
-            return note.position < 1000;
-          });
+          .filter((note) => note.position < 1000);
 
         return updatedNotes;
       });
-    }, 16); // Ripristino 60 FPS per movimento fluido
+    }, 16); // ~60 FPS
 
     return () => clearInterval(gameLoop);
   }, [gameStarted]);
 
-  // Beat generator - genera note a tempo di musica
+  // Beat generator
   useEffect(() => {
     if (!gameStarted) return;
-
-    const currentTime = Date.now();
-    setLastBeatTime(currentTime);
 
     const beatGenerator = setInterval(() => {
       generateNoteFromPattern();
@@ -221,12 +244,13 @@ export default function DanceHero() {
     setNextNoteId(1);
     setCurrentPatternIndex(0);
     setCurrentBeatIndex(0);
-    setLastBeatTime(Date.now());
+    isProcessingHit.current = false;
   };
 
   const resetGame = () => {
     setGameStarted(false);
     setNotes([]);
+    isProcessingHit.current = false;
   };
 
   if (!gameStarted) {
@@ -255,11 +279,11 @@ export default function DanceHero() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-purple-900 text-white gameArea">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-purple-900 text-white">
       {/* Header */}
       <div
-        className="flex justify-between items-center p-4 bg-black/20 danceHeader"
-        style={{ zIndex: 10 }}
+        className="flex justify-between items-center p-4 bg-black/20"
+        style={{ zIndex: 10, height: "68px" }}
       >
         <div className="text-base md:text-lg font-bold">
           Score:{" "}
@@ -277,16 +301,19 @@ export default function DanceHero() {
       </div>
 
       {/* Game Area */}
-      <div className="relative bg-black/10 notesArea">
+      <div className="relative bg-black/10 flex-1">
         {/* Track lines */}
         <div className="absolute inset-0 flex">
-          {DIRECTIONS.map((direction, index) => (
+          {DIRECTIONS.map((direction) => (
             <div
               key={direction}
               className="flex-1 border-r border-white/20 relative"
             >
               {/* Hit zone indicator */}
-              <div className="absolute w-full h-12 border-2 border-white/50 bg-white/10 rounded clickArea" />
+              <div
+                className="absolute w-full h-12 border-2 border-white/50 bg-white/10 rounded"
+                style={{ top: "80%" }}
+              />
             </div>
           ))}
         </div>
@@ -310,7 +337,7 @@ export default function DanceHero() {
       </div>
 
       {/* Controls */}
-      <div className="p-4 bg-black/30 controls">
+      <div className="p-4 bg-black/30" style={{ height: "96px" }}>
         <div className="grid grid-cols-4 gap-3 md:gap-4 max-w-md mx-auto">
           {DIRECTIONS.map((direction) => (
             <button
