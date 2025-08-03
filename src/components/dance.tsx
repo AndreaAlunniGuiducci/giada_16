@@ -19,7 +19,7 @@ interface Note {
 const DIRECTIONS: Direction[] = ["up", "down", "left", "right"];
 const GAME_HEIGHT = window.innerHeight;
 const HIT_ZONE = (GAME_HEIGHT / 100) * 88; // 80% dell'altezza del gioco
-const HIT_TOLERANCE = 10; // Aumentato per rendere più facile colpire le note lente
+const HIT_TOLERANCE = 50; // Aumentato per rendere più facile colpire le note lente
 const BPM = 120; // Battiti per minuto
 const BEAT_INTERVAL = (60 / BPM) * 1000; // Millisecondi tra ogni beat
 const NOTE_SPEED = 1.5; // Velocità fissa più lenta per evitare sparizioni
@@ -339,6 +339,7 @@ export default function DanceHero() {
           </div>
         )}
       </div>
+      <div className="controls"></div>
     </div>
   );
 }
