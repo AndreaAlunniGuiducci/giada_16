@@ -44,9 +44,9 @@ const COLORS = {
 
 // Frequenze musicali per ogni direzione (accordo di Do maggiore)
 const MUSICAL_FREQUENCIES = {
-  up: 261.63,    // C4 - Do
-  down: 329.63,  // E4 - Mi
-  left: 392.00,  // G4 - Sol
+  up: 261.63, // C4 - Do
+  down: 329.63, // E4 - Mi
+  left: 392.0, // G4 - Sol
   right: 523.25, // C5 - Do ottava
 };
 
@@ -61,7 +61,8 @@ class AudioEngine {
 
   async initialize() {
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       this.masterGain = this.audioContext.createGain();
       this.masterGain.connect(this.audioContext.destination);
       this.masterGain.gain.value = 0.7;
@@ -75,11 +76,15 @@ class AudioEngine {
 
   private createDrumBuffer() {
     if (!this.audioContext) return;
-    
+
     const bufferSize = this.audioContext.sampleRate * 0.1; // 100ms di rumore
-    this.drumBuffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+    this.drumBuffer = this.audioContext.createBuffer(
+      1,
+      bufferSize,
+      this.audioContext.sampleRate
+    );
     const data = this.drumBuffer.getChannelData(0);
-    
+
     for (let i = 0; i < bufferSize; i++) {
       data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.1));
     }
@@ -97,9 +102,9 @@ class AudioEngine {
     gain.connect(this.masterGain);
 
     oscillator.frequency.value = frequency;
-    oscillator.type = 'triangle';
-    
-    filter.type = 'lowpass';
+    oscillator.type = "triangle";
+
+    filter.type = "lowpass";
     filter.frequency.value = frequency * 2;
 
     const now = this.audioContext.currentTime;
@@ -123,7 +128,7 @@ class AudioEngine {
     filter.connect(gain);
     gain.connect(this.masterGain);
 
-    filter.type = 'highpass';
+    filter.type = "highpass";
     filter.frequency.value = 100;
 
     gain.gain.value = volume;
@@ -133,38 +138,38 @@ class AudioEngine {
 
   startBackgroundMusic() {
     if (!this.audioContext || !this.masterGain || this.isPlaying) return;
-    
+
     this.isPlaying = true;
-    
+
     // Bass line pattern
-    const bassNotes = [130.81, 130.81, 174.61, 196.00]; // C3, C3, F3, G3
+    const bassNotes = [130.81, 130.81, 174.61, 196.0]; // C3, C3, F3, G3
     let bassIndex = 0;
-    
+
     const playBass = () => {
       if (!this.isPlaying) return;
-      
+
       const frequency = bassNotes[bassIndex % bassNotes.length];
       this.playNote(frequency, 0.4, 0.15);
       bassIndex++;
-      
+
       setTimeout(playBass, BEAT_INTERVAL);
     };
-    
+
     // Drum pattern
     let drumBeat = 0;
     const playDrums = () => {
       if (!this.isPlaying) return;
-      
+
       if (drumBeat % 4 === 0 || drumBeat % 4 === 2) {
         this.playDrum(0.3); // Kick
       } else if (drumBeat % 4 === 1 || drumBeat % 4 === 3) {
         this.playDrum(0.15); // Snare
       }
-      
+
       drumBeat++;
       setTimeout(playDrums, BEAT_INTERVAL);
     };
-    
+
     // Inizia i pattern
     setTimeout(playBass, 0);
     setTimeout(playDrums, 0);
@@ -249,7 +254,7 @@ export default function DanceHeroWithMusic() {
     if (audioEngineRef.current) {
       const actualVolume = muted ? 0 : volume;
       audioEngineRef.current.setVolume(actualVolume);
-      
+
       if (muted) {
         audioEngineRef.current.suspend();
       } else {
@@ -260,34 +265,38 @@ export default function DanceHeroWithMusic() {
 
   const getDirectionIcon = (direction: Direction) => {
     switch (direction) {
-      case "up": return <ChevronUp size={32} />;
-      case "down": return <ChevronDown size={32} />;
-      case "left": return <ChevronLeft size={32} />;
-      case "right": return <ChevronRight size={32} />;
+      case "up":
+        return <ChevronUp size={32} />;
+      case "down":
+        return <ChevronDown size={32} />;
+      case "left":
+        return <ChevronLeft size={32} />;
+      case "right":
+        return <ChevronRight size={32} />;
     }
   };
 
   const playNoteSound = (direction: Direction, hit: boolean = false) => {
     if (!audioEngineRef.current || muted) return;
-    
+
     const frequency = MUSICAL_FREQUENCIES[direction];
     const duration = hit ? 0.3 : 0.15;
     const volumeLevel = hit ? 0.4 : 0.25;
-    
+
     audioEngineRef.current.playNote(frequency, duration, volumeLevel);
   };
 
   const generateNote = useCallback((direction: Direction) => {
     const noteId = nextNoteIdRef.current;
     nextNoteIdRef.current += 1;
-    
+
     const newNote: Note = {
       id: noteId,
       direction,
       position: -50,
       hit: false,
     };
-    
+
     setNotes((prev) => [...prev, newNote]);
 
     // Suona l'anteprima della nota
@@ -298,7 +307,9 @@ export default function DanceHeroWithMusic() {
     const currentPattern = SONG_PATTERNS[currentPatternIndexRef.current];
     const beatValue = currentPattern[currentBeatIndexRef.current];
 
-    console.log(`Pattern ${currentPatternIndexRef.current}, Beat ${currentBeatIndexRef.current}, Value: ${beatValue}`);
+    console.log(
+      `Pattern ${currentPatternIndexRef.current}, Beat ${currentBeatIndexRef.current}, Value: ${beatValue}`
+    );
 
     if (beatValue > 0) {
       const direction = DIRECTIONS[beatValue - 1];
@@ -306,12 +317,14 @@ export default function DanceHeroWithMusic() {
       generateNote(direction);
     }
 
-    const nextBeatIndex = (currentBeatIndexRef.current + 1) % currentPattern.length;
+    const nextBeatIndex =
+      (currentBeatIndexRef.current + 1) % currentPattern.length;
     currentBeatIndexRef.current = nextBeatIndex;
     setCurrentBeatIndex(nextBeatIndex);
 
     if (nextBeatIndex === 0) {
-      currentPatternIndexRef.current = (currentPatternIndexRef.current + 1) % SONG_PATTERNS.length;
+      currentPatternIndexRef.current =
+        (currentPatternIndexRef.current + 1) % SONG_PATTERNS.length;
       setCurrentPatternIndex(currentPatternIndexRef.current);
     }
   }, [generateNote]);
@@ -368,20 +381,23 @@ export default function DanceHeroWithMusic() {
     });
   }, []);
 
-  const handleKeyPress = useCallback((direction: Direction) => {
-    if (!gameStarted) return;
+  const handleKeyPress = useCallback(
+    (direction: Direction) => {
+      if (!gameStarted) return;
 
-    setPressedKeys((prev) => new Set([...Array.from(prev), direction]));
-    checkHit(direction);
+      setPressedKeys((prev) => new Set([...Array.from(prev), direction]));
+      checkHit(direction);
 
-    setTimeout(() => {
-      setPressedKeys((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(direction);
-        return newSet;
-      });
-    }, 150);
-  }, [gameStarted, checkHit]);
+      setTimeout(() => {
+        setPressedKeys((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(direction);
+          return newSet;
+        });
+      }, 150);
+    },
+    [gameStarted, checkHit]
+  );
 
   const startMusic = () => {
     if (audioEngineRef.current && !muted) {
@@ -434,10 +450,10 @@ export default function DanceHeroWithMusic() {
     setGameStarted(false);
     setNotes([]);
     isProcessingHit.current = false;
-    
+
     // Ferma la musica
     stopMusic();
-    
+
     // Pulisci gli intervalli
     if (gameLoopRef.current) {
       clearInterval(gameLoopRef.current);
@@ -461,40 +477,40 @@ export default function DanceHeroWithMusic() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!gameStarted) return;
-      
+
       let direction: Direction | null = null;
-      
+
       switch (e.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          direction = 'up';
+        case "ArrowUp":
+        case "w":
+        case "W":
+          direction = "up";
           break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          direction = 'down';
+        case "ArrowDown":
+        case "s":
+        case "S":
+          direction = "down";
           break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          direction = 'left';
+        case "ArrowLeft":
+        case "a":
+        case "A":
+          direction = "left";
           break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          direction = 'right';
+        case "ArrowRight":
+        case "d":
+        case "D":
+          direction = "right";
           break;
       }
-      
+
       if (direction) {
         e.preventDefault();
         handleKeyPress(direction);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameStarted, handleKeyPress]);
 
   if (!gameStarted) {
@@ -515,12 +531,13 @@ export default function DanceHeroWithMusic() {
                 🎵 Con traccia musicale sincronizzata!
               </div>
               <div className="text-xs text-purple-300">
-                💻 Usa le frecce della tastiera o WASD<br />
+                💻 Usa le frecce della tastiera o WASD
+                <br />
                 📱 Tocca i pulsanti sullo schermo
               </div>
             </div>
           </div>
-          
+
           {/* Controlli audio pre-gioco */}
           <div className="mb-6 p-4 bg-black/20 rounded-lg">
             <div className="flex items-center justify-center gap-4 mb-4">
@@ -555,7 +572,7 @@ export default function DanceHeroWithMusic() {
           >
             🎵 Inizia a Ballare! 🎵
           </button>
-          
+
           <div className="mt-6 text-sm text-purple-300">
             <p>🏆 Fai combo per moltiplicare i punti!</p>
             <p>🎯 Colpisci le note nella zona luminosa</p>
@@ -565,16 +582,89 @@ export default function DanceHeroWithMusic() {
     );
   }
 
+  if (score >= 300) {
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+        <div className="bg-gradient-to-br from-purple-800 via-pink-700 to-purple-800 p-8 rounded-3xl shadow-2xl max-w-md mx-4 text-center border-4 border-yellow-400">
+          <div className="mb-6">
+            <div className="text-6xl mb-4 animate-spin">🏆</div>
+            <h2 className="text-3xl font-bold text-yellow-300 mb-4 animate-pulse">
+              VITTORIA!
+            </h2>
+            <div className="text-lg text-white whitespace-pre-line leading-relaxed">
+              Complimenti Amore mio ecco il tuo{" "}
+              <a
+                href="https://suno.com/s/m0n22KS8YwOy0ToP"
+                style={{ textDecoration: "underline" }}
+              >
+                Regalo
+              </a>
+            </div>
+          </div>
+
+          <div className="mb-6 p-4 bg-black/30 rounded-xl">
+            <div className="text-yellow-400 font-bold text-xl mb-2">
+              🎯 Punteggio Finale: {score.toLocaleString()}
+            </div>
+            <div className="text-pink-300 font-bold text-lg">
+              🔥 Max Combo: {maxCombo}
+            </div>
+          </div>
+
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => {
+                setScore(0);
+                startGame();
+              }}
+              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 px-6 py-3 rounded-full text-white font-bold transition-all transform hover:scale-105 shadow-lg"
+            >
+              🎵 Gioca Ancora
+            </button>
+            <button
+              onClick={() => {
+                setScore(0);
+                resetGame();
+              }}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-6 py-3 rounded-full text-white font-bold transition-all transform hover:scale-105 shadow-lg"
+            >
+              🎂 Menu Principale
+            </button>
+          </div>
+
+          <div className="mt-6 text-sm text-purple-200">
+            <div className="animate-pulse">
+              🎈 Tanti auguri per i tuoi 16 anni! 🎈
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="gameArea flex flex-col min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-purple-900 text-white">
       {/* Header */}
-      <div className="danceHeader flex justify-between items-center p-4 bg-black/20 backdrop-blur-sm" style={{ zIndex: 10, height: "68px" }}>
+      <div
+        className="danceHeader flex justify-between items-center p-4 bg-black/20 backdrop-blur-sm"
+        style={{ zIndex: 10, height: "68px" }}
+      >
         <div className="text-base md:text-lg font-bold">
-          Score: <span className="text-yellow-300 animate-pulse">{score.toLocaleString()}</span>
+          Score:{" "}
+          <span className="text-yellow-300 animate-pulse">
+            {score.toLocaleString()}
+          </span>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-base md:text-lg font-bold">
-            Combo: <span className={`${combo > 10 ? 'text-pink-300 animate-bounce' : 'text-pink-300'}`}>{combo}</span>
+            Combo:{" "}
+            <span
+              className={`${
+                combo > 10 ? "text-pink-300 animate-bounce" : "text-pink-300"
+              }`}
+            >
+              {combo}
+            </span>
           </div>
           {/* Controlli audio */}
           <div className="flex items-center gap-2">
@@ -605,15 +695,23 @@ export default function DanceHeroWithMusic() {
       </div>
 
       {/* Game Area */}
-      <div className="notesArea relative bg-black/10 flex-1" style={{ height: GAME_HEIGHT }}>
+      <div
+        className="notesArea relative bg-black/10 flex-1"
+        style={{ height: GAME_HEIGHT }}
+      >
         {/* Track lines */}
         <div className="absolute inset-0 flex">
           {DIRECTIONS.map((direction, index) => (
-            <div key={direction} className="flex-1 border-r border-white/20 relative">
+            <div
+              key={direction}
+              className="flex-1 border-r border-white/20 relative"
+            >
               {/* Hit zone indicator */}
               <div
                 className={`clickArea absolute w-full h-12 border-2 border-white/50 bg-white/10 rounded-lg transition-all duration-300 ${
-                  pressedKeys.has(direction) ? 'bg-white/30 border-white/80 scale-105' : ''
+                  pressedKeys.has(direction)
+                    ? "bg-white/30 border-white/80 scale-105"
+                    : ""
                 }`}
                 style={{ top: "80%" }}
               />
@@ -630,8 +728,8 @@ export default function DanceHeroWithMusic() {
           <div
             key={note.id}
             className={`absolute w-16 h-16 rounded-full flex items-center justify-center text-white font-bold shadow-xl transition-all duration-300 ${
-              note.hit 
-                ? "opacity-0 scale-150 rotate-180" 
+              note.hit
+                ? "opacity-0 scale-150 rotate-180"
                 : "opacity-100 scale-100 hover:scale-110"
             } ${COLORS[note.direction]} border-2 border-white/30`}
             style={{
@@ -664,7 +762,8 @@ export default function DanceHeroWithMusic() {
             Pattern: {currentPatternIndex + 1}/{SONG_PATTERNS.length}
           </div>
           <div className="text-xs text-purple-200">
-            Beat: {currentBeatIndex + 1}/{SONG_PATTERNS[currentPatternIndex].length}
+            Beat: {currentBeatIndex + 1}/
+            {SONG_PATTERNS[currentPatternIndex].length}
           </div>
         </div>
 
@@ -678,7 +777,10 @@ export default function DanceHeroWithMusic() {
       </div>
 
       {/* Controls */}
-      <div className="controls p-4 bg-black/30 backdrop-blur-sm" style={{ height: "96px" }}>
+      <div
+        className="controls p-4 bg-black/30 backdrop-blur-sm"
+        style={{ height: "96px" }}
+      >
         <div className="grid grid-cols-4 gap-3 md:gap-4 max-w-md mx-auto">
           {DIRECTIONS.map((direction, index) => (
             <button
@@ -698,7 +800,7 @@ export default function DanceHeroWithMusic() {
               <div className="flex flex-col items-center">
                 {getDirectionIcon(direction)}
                 <div className="text-xs mt-1 opacity-70">
-                  {['↑/W', '↓/S', '←/A', '→/D'][index]}
+                  {["↑/W", "↓/S", "←/A", "→/D"][index]}
                 </div>
               </div>
             </button>
@@ -707,7 +809,10 @@ export default function DanceHeroWithMusic() {
 
         {maxCombo > 0 && (
           <div className="text-center mt-2 text-purple-200">
-            Max Combo: <span className="text-yellow-300 font-bold animate-pulse">{maxCombo}</span>
+            Max Combo:{" "}
+            <span className="text-yellow-300 font-bold animate-pulse">
+              {maxCombo}
+            </span>
             {maxCombo > 20 && <span className="ml-2">🏆</span>}
             {maxCombo > 50 && <span className="ml-1">👑</span>}
           </div>
