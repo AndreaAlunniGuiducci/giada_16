@@ -18,8 +18,8 @@ interface Note {
 
 const DIRECTIONS: Direction[] = ["up", "down", "left", "right"];
 const GAME_HEIGHT =
-  typeof window !== "undefined" ? window.innerHeight - 96  : 600;
-const HIT_ZONE = (GAME_HEIGHT / 100) * 80;
+  typeof window !== "undefined" ? window.innerHeight - 96 : 600;
+const HIT_ZONE = (GAME_HEIGHT / 100) * 88;
 const HIT_TOLERANCE = 50;
 const BPM = 120;
 const BEAT_INTERVAL = (60 / BPM) * 1000;
@@ -27,7 +27,7 @@ const NOTE_SPEED = 1.5;
 
 // Pattern musicali predefiniti
 const SONG_PATTERNS = [
-  [1, 0, 1, 0, 2, 0, 1, 0, 3, 0, 2, 0, 4, 0, 1, 0],
+  [1, 0, 2, 0, 3, 0, 1, 0, 3, 0, 2, 0, 4, 0, 1, 0],
   [1, 2, 0, 3, 1, 0, 4, 2, 0, 1, 3, 0, 2, 4, 0, 1],
   [1, 2, 3, 0, 4, 1, 0, 2, 3, 4, 0, 1, 2, 0, 3, 4],
 ];
@@ -277,6 +277,8 @@ export default function DanceHero() {
       </div>
     );
   }
+
+  console.log("SCORE:", score);
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-purple-900 text-white">
