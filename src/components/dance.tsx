@@ -574,15 +574,15 @@ export default function DanceHeroWithMusic() {
           </button>
 
           <div className="mt-6 text-sm text-purple-300">
-            <p>🏆 Fai combo per moltiplicare i punti!</p>
             <p>🎯 Colpisci le note nella zona luminosa</p>
+            <p>Raggiungi 30.000 punti e riceverai il tuo premio</p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (score >= 300) {
+  if (score >= 30000) {
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
         <div className="bg-gradient-to-br from-purple-800 via-pink-700 to-purple-800 p-8 rounded-3xl shadow-2xl max-w-md mx-4 text-center border-4 border-yellow-400">
